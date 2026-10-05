@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Турнир блюд</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 {
+    margin-bottom: 10px;
+    font-size: 2rem;
+    text-align: center;
+    background: linear-gradient(90deg, #ffd166, #ef476f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  #round-info {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    color: #a0a0c0;
+  }
+  #arena {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+  }
+  .dish {
+    background: #2d2d44;
+    border: 3px solid #444;
+    border-radius: 20px;
+    padding: 40px 50px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 220px;
+    user-select: none;
+  }
+  .dish:hover {
+    border-color: #ffd166;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(255, 209, 102, 0.3);
+  }
+  .vs {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ef476f;
+  }
+  #winner {
+    text-align: center;
+    display: none;
+  }
+  #winner h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+  #winner .champion {
+    font-size: 2.5rem;
+    padding: 40px 60px;
+    background: linear-gradient(135deg, #ffd166, #ef476f);
+    border-radius: 25px;
+    display: inline-block;
+    margin-bottom: 30px;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  button {
+    background: #ffd166;
+    color: #1e1e2f;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+  }
+  button:hover { background: #ffb703; }
+</style>
+</head>
+<body>
+
+<h1>🏆 Турнир блюд</h1>
+<div id="round-info"></div>
+
+<div id="game">
+  <div id="arena"></div>
+</div>
+
+<div id="winner">
+  <h2>Победитель!</h2>
+  <div class="champion" id="champion-name"></div>
+  <br>
+  <button onclick="restart()">Играть снова</button>
+</div>
+
+<script>
+// Список блюд — популярные в России + солёные
+const initialDishes = [
+  'Пельмени',
+  'Борщ',
+  'Блины',
+  'Оливье',
+  'Селёдка под шубой',
+  'Шашлык',
+  'Окрошка',
+  'Пирожки',
+  'Солянка',
+  'Гречка с котлетой',
+  'Солёные огурцы',
+  'Солёные грузди',
+  'Холодец',
+  'Винегрет',
+  'Сырники',
+  'Квашеная капуста'
+];
+
+let rounds = [];      // текущий раунд: массив блюд
+let nextRound = [];   // победители текущего раунда
+let currentPair = 0;  // индекс текущей пары
+let roundNumber = 1;
+
+const arena = document.getElementById('arena');
+const roundInfo = document.getElementById('round-info');
+const gameDiv = document.getElementById('game');
+const winnerDiv = document.getElementById('winner');
+const championName = document.getElementById('champion-name');
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  rounds = shuffle(initialDishes);
+  nextRound = [];
+  currentPair = 0;
+  roundNumber = 1;
+  winnerDiv.style.display = 'none';
+  gameDiv.style.display = 'block';
+  renderPair();
+}
+
+function renderPair() {
+  // Если в текущем раунде закончились пары
+  if (currentPair >= rounds.length) {
+    if (nextRound.length === 1) {
+      // Победитель
+      gameDiv.style.display = 'none';
+      winnerDiv.style.display = 'block';
+      championName.textContent = nextRound[0];
+      return;
+    }
+    // Переход к следующему раунду
+    rounds = nextRound;
+    nextRound = [];
+    currentPair = 0;
+    roundNumber++;
+  }
+
+  const a = rounds[currentPair];
+  const b = rounds[currentPair + 1];
+
+  roundInfo.textContent = `Раунд ${roundNumber} • Пар: ${Math.floor(rounds.length / 2)}`;
+
+  arena.innerHTML = `
+    <div class="dish" data-choice="0">${a}</div>
+    <div class="vs">VS</div>
+    <div class="dish" data-choice="1">${b}</div>
+  `;
+
+  arena.querySelectorAll('.dish').forEach(el => {
+    el.addEventListener('click', () => {
+      const choice = parseInt(el.dataset.choice);
+      nextRound.push(choice === 0 ? a : b);
+      currentPair += 2;
+      renderPair();
+    });
+  });
+}
+
+function restart() {
+  startGame();
+}
+
+startGame();
+</script>
+
+</body>
+</html>
